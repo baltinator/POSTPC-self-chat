@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">self-chat</string>
+    <string name="delete_message_title">Delete Message</string>
+    <string name="delete_message_question">Are you sure?</string>
+    <string name="message_hint">Enter your message here</string>
+    <string name="send_button_txt">Send</string>
+</resources>
