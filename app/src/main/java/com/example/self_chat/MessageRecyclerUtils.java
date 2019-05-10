@@ -17,7 +17,7 @@ class MessageRecyclerUtils {
 
         @Override
         public boolean areItemsTheSame(@NonNull Message m1, @NonNull Message m2) {
-            return m1.getText().equals(m2.getText());
+            return m1.getContent().equals(m2.getContent());
         }
 
         @Override
@@ -80,7 +80,7 @@ class MessageRecyclerUtils {
         @Override
         public void onBindViewHolder(@NonNull MessageHolder personHolder, int position) {
             Message msg = getItem(position);
-            personHolder.text.setText(msg.getText());
+            personHolder.text.setText(msg.getContent());
         }
     }
 

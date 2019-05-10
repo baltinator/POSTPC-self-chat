@@ -1,36 +1,27 @@
 package com.example.self_chat;
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import java.util.Date;
 
-public class Message implements Parcelable {
+public class Message implements Comparable<Message> {
 
-    private final String text;
+    private final String content;
+    private final Date timeStamp;
+    private final int id;
+
+    public Message(){
+        content = null;
+        id = 0;
+        timeStamp = null;
+    }
 
     Message(String message) {
-
-        this.text = message;
+        this.content = message;
+        this.timeStamp = new Date(System.currentTimeMillis());
+        this.id = createMessageId(this.content, this.timeStamp);
     }
 
-    private Message(Parcel in) {
-        text = in.readString();
-    }
-
-    public static final Creator<Message> CREATOR = new Creator<Message>() {
-        @Override
-        public Message createFromParcel(Parcel in) {
-            return new Message(in);
-        }
-
-        @Override
-        public Message[] newArray(int size) {
-            return new Message[size];
-        }
-    };
-
-    String getText()
-    {
-        return this.text;
+    String getContent() {
+        return this.content;
     }
 
     @Override
@@ -38,13 +29,20 @@ public class Message implements Parcelable {
         return this == o;
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    public Date getTimeStamp() {
+        return this.timeStamp;
+    }
+
+    public int getId() {
+        return this.id;
     }
 
     @Override
-    public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeString(text);
+    public int compareTo(Message o) {
+        return this.timeStamp.compareTo(o.getTimeStamp());
+    }
+
+    private static int createMessageId(String content, Date date) {
+        return (content + date.toString()).hashCode();
     }
 }

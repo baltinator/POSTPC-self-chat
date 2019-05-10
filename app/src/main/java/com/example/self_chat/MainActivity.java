@@ -12,6 +12,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -22,14 +24,14 @@ public class MainActivity extends AppCompatActivity implements
 
     private static final String MESSAGE_VIEW_KEY = "messages_view";
     private static final String EMPTY_STR = "";
-    private static final String EMPTY_MESSAGE_ERR = "You can't send an empty message, oh silly!";
-    private final static String SP_ALL_MESSAGES = "self.chat.messages";
 
     private MessageRecyclerUtils.MessageAdapter adapter
             = new MessageRecyclerUtils.MessageAdapter();
 
-    private ArrayList<Message> messages = new ArrayList<>();
+    private ArrayList<Message> messages;
     private Gson gson;
+    private SelfChatApp app;
+    FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,22 +41,20 @@ public class MainActivity extends AppCompatActivity implements
         RecyclerView recyclerView = findViewById(R.id.message_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(this,
                 LinearLayoutManager.VERTICAL, false));
-
         recyclerView.setAdapter(adapter);
-        adapter.callback = this;
+        this.adapter.callback = this;
 
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        String messagesListGson = sp.getString(SP_ALL_MESSAGES, null);
-        gson = new Gson();
+        this.app = (SelfChatApp) getApplicationContext();
+        this.messages = app.getMessages();
+        this.db = app.getDataBase();
+        this.gson = new Gson();
 
         if (savedInstanceState != null) {
-            messages = savedInstanceState.getParcelableArrayList(MESSAGE_VIEW_KEY);
-        } else if (messagesListGson != null) {
-            messages = gson.fromJson(messagesListGson,
+            messages = this.gson.fromJson(savedInstanceState.getString(MESSAGE_VIEW_KEY),
                     new TypeToken<ArrayList<Message>>(){}.getType());
         }
 
-        adapter.submitList(messages);
+        this.adapter.submitList(messages);
 
         final EditText messageInput = findViewById(R.id.message_input);
         Button sendButton = findViewById(R.id.send_button);
@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements
                 String msg_string = message.toString();
                 message.clear();
                 if (msg_string.equals(EMPTY_STR)) {
-                    Toast.makeText(MainActivity.this, EMPTY_MESSAGE_ERR,
+                    Toast.makeText(MainActivity.this, R.string.empty_msg_err,
                             Toast.LENGTH_SHORT).show();
                 } else {
                     onSendClick(new Message(msg_string));
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putParcelableArrayList(MESSAGE_VIEW_KEY, messages);
+        outState.putString(MESSAGE_VIEW_KEY, gson.toJson(messages));
     }
 
     @Override
@@ -89,6 +89,9 @@ public class MainActivity extends AppCompatActivity implements
         this.messages = messagesCopy;
         this.adapter.submitList(this.messages);
         this.saveMessages();
+
+        CollectionReference cr = db.collection(SelfChatApp.FB_MEESAGES_KEY);
+        cr.document(String.valueOf(msg.getId())).set(msg);
     }
 
     @Override
@@ -98,12 +101,15 @@ public class MainActivity extends AppCompatActivity implements
         this.messages = messagesCopy;
         this.adapter.submitList(this.messages);
         this.saveMessages();
+
+        CollectionReference cr = db.collection(SelfChatApp.FB_MEESAGES_KEY);
+        cr.document(String.valueOf(msg.getId())).delete();
     }
 
     private void saveMessages() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this.app);
         SharedPreferences.Editor editor = sp.edit();
-        editor.putString(SP_ALL_MESSAGES, gson.toJson(this.messages));
+        editor.putString(SelfChatApp.SP_ALL_MESSAGES, gson.toJson(this.messages));
         editor.apply();
     }
 }
