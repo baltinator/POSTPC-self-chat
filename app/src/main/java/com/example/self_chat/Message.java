@@ -29,17 +29,13 @@ public class Message implements Comparable<Message> {
         return this == o;
     }
 
-    public Date getTimeStamp() {
-        return this.timeStamp;
-    }
-
-    public int getId() {
+    int getId() {
         return this.id;
     }
 
     @Override
     public int compareTo(Message o) {
-        return this.timeStamp.compareTo(o.getTimeStamp());
+        return this.timeStamp.compareTo(o.timeStamp);
     }
 
     private static int createMessageId(String content, Date date) {
