@@ -17,12 +17,15 @@ import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class SelfChatApp extends Application {
 
     public final static String FB_MEESAGES_KEY = "fb_messages";
     public final static String SP_ALL_MESSAGES = "self.chat.messages";
 
+    private Executor executor = Executors.newCachedThreadPool();
     private ArrayList<Message> messages;
     FirebaseFirestore db;
 
@@ -36,22 +39,27 @@ public class SelfChatApp extends Application {
         CollectionReference cr = db.collection(FB_MEESAGES_KEY);
         cr.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
-            public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                if (task.isSuccessful() && task.getResult() != null){
-                    for (QueryDocumentSnapshot queryDocumentSnapshot : task.getResult()) {
-                        Message msg = queryDocumentSnapshot.toObject(Message.class);
-                        messages.add(msg);
+            public void onComplete(@NonNull final Task<QuerySnapshot> task) {
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (task.isSuccessful() && task.getResult() != null){
+                            for (QueryDocumentSnapshot queryDocumentSnapshot : task.getResult()) {
+                                Message msg = queryDocumentSnapshot.toObject(Message.class);
+                                messages.add(msg);
+                            }
+                            Collections.sort(messages);
+                        } else {
+                            Gson gson = new Gson();
+                            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApp());
+                            String messagesListGson = sp.getString(SP_ALL_MESSAGES, null);
+                            if (messagesListGson != null) {
+                                messages = gson.fromJson(messagesListGson,
+                                        new TypeToken<ArrayList<Message>>(){}.getType());
+                            }
+                        }
                     }
-                    Collections.sort(messages);
-            } else {
-                    Gson gson = new Gson();
-                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApp());
-                    String messagesListGson = sp.getString(SP_ALL_MESSAGES, null);
-                    if (messagesListGson != null) {
-                        messages = gson.fromJson(messagesListGson,
-                                new TypeToken<ArrayList<Message>>(){}.getType());
-                    }
-                }
+                });
                 startChatActivity();
         }});
     }
